@@ -1,0 +1,13 @@
+@isTest
+public class account_team_member
+{
+    static testMethod void method1()
+    {
+        account acc = new account();
+        acc.name = 'test Account';
+        insert acc;
+        account ac1 = [select ownerid from account where id=:acc.id];
+        accountteammember atm = [select userid from accountteammember where accountid = :acc.id];
+        System.assertEquals(ac1.ownerid,atm.userid);    
+    }
+} 
