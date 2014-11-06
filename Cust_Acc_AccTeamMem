@@ -1,0 +1,65 @@
+trigger Cust_Acc_AccTeamMember on Customer__c (after insert, after delete, after update) 
+{
+    list<account> alist = new list<account>();
+    list<user> ulist = new list<user>();
+    list<accountteammember> atmlist = new list<accountteammember>();
+    list<accountteammember> atmlist1 = new list<accountteammember>();
+    if(trigger.isinsert)
+    {
+    for(customer__c c: trigger.new)
+    {
+        if(c.acc_mgr__c != null)
+        {
+            accountteammember atm = new accountteammember();
+            atm.accountid = c.account__c;
+            atm.userid = c.acc_mgr__C;
+            atmlist.add(atm);
+        }
+    }
+    if(atmlist.size()>0 && atmlist!=null)
+    {
+        insert atmlist;
+    }  
+    }
+    
+    if(trigger.isdelete)
+    {
+    for(customer__c c: trigger.old)
+    {
+        atmlist = [select userid from accountteammember where userid =: c.acc_mgr__c];
+    }
+    if(atmlist.size()>0 && atmlist!=null)
+    {
+        delete atmlist;
+    }  
+    }
+	
+	if(trigger.isupdate)
+	{
+		for(customer__C C:trigger.new)
+		{
+			if(c.acc_mgr__c == null)
+			{
+				for(customer__C c1:trigger.old)
+				{
+					atmlist = [select userid from accountteammember where userid =: c1.acc_mgr__c];
+				}
+			}
+			else
+			{
+				accountteammember atm = new accountteammember();
+				atm.accountid = c.account__c;
+				atm.userid = c.acc_mgr__C;
+				atmlist1.add(atm);
+			}
+		}
+		if(atmlist1.size()>0 && atmlist1!=null)
+		{
+			insert atmlist1;
+		}  
+		if(atmlist.size()>0 && atmlist!=null)
+		{
+			delete atmlist;
+		}  
+    }
+ }
