@@ -1,0 +1,98 @@
+trigger auto_transaction_update on Customer__c (after insert, after update, before delete, after undelete) 
+{
+    list<customer__c> ctlist = trigger.new;
+    list<customer__c> ctlist2 = new list<customer__c>();
+    set<id> set1 = new set<id>();
+    list<transaction__c> trlist = new list<transaction__c>();
+    list<transaction__c> trdellist = new list<transaction__c>();
+    list<transaction__c> trdlist = new list<transaction__c>();
+    list<transaction__c> trdl = new list<transaction__c>();
+	list<transaction__c> trdl1 = new list<transaction__c>();
+
+    if(trigger.isafter)
+    {
+    if(trigger.isinsert)
+    {
+        for(customer__C ct: ctlist)
+        {
+            if(ct.conf_transaction__c == True)
+            {
+                transaction__c tr = new transaction__c();
+                tr.name = ct.name + 'Transaction';
+                tr.customer__c = ct.id;
+                tr.amount__c = ct.Cust_Amount__c;
+                tr.type__c = 'Active';
+                trlist.add(tr);
+            }
+        }
+        if(trlist.size()>0 && trlist!=null)
+        {
+            insert trlist;
+        }
+    }
+    
+    if(trigger.isupdate)
+    {
+        for(customer__C ct1: ctlist)
+        {
+            if(ct1.conf_transaction__c == True)
+            {
+                list<transaction__c> trlist1 = [select id,name from transaction__c where customer__c =:ct1.id];
+                if(trlist1.size() == 0)
+                {
+                    transaction__c tr = new transaction__c();
+                    tr.name = ct1.name + 'Transaction';
+                    tr.customer__c = ct1.id;
+                    tr.amount__c = ct1.Cust_Amount__c;
+                    tr.type__c = 'Active';
+                    trlist.add(tr);
+                }
+            }
+            if(ct1.conf_transaction__c == False)
+            {
+                list<transaction__c> trlist1 = [select id,name from transaction__c where customer__c =:ct1.id];
+                if(trlist1.size() > 0)
+                {
+                    trdellist.add(trlist1[0]);
+                }
+            }
+        }
+        if(trlist.size()>0 && trlist!=null)
+        {
+            insert trlist;
+        }
+        if(trdellist.size()>0 && trdellist!=null)
+        {
+            delete trdellist;
+        }
+    }
+	
+	if(trigger.isundelete)
+	{
+		for(customer__C ct: ctlist)
+		{
+			trdl1 = [select id,name from transaction__c where customer__C =:ct:id all rows];
+		}
+		if(trdl1.size()>0 && trdl1!=null)
+		{
+			undelete trdl1;
+		}
+	}
+	
+    }
+    
+    if(trigger.isbefore)
+    {
+    if(trigger.isdelete)
+    {
+        for(customer__c ct: trigger.old)
+        {
+            trdl = [select id,name from transaction__c where customer__C =:ct.id];
+        }    
+        if(trdl.size()>0 && trdl!=null)
+        {
+           delete trdl;
+        } 
+    }
+    }   
+}
