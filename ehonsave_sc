@@ -1,0 +1,85 @@
+method EH_ONSAVE.
+
+CHECK check_before_save( ) IS INITIAL.
+
+  DATA lr_entity    TYPE REF TO cl_crm_bol_entity.
+  DATA lv_title     TYPE string.
+  DATA lv_text      TYPE string.
+*  DATA gr_confirm_popup TYPE REF TO if_bsp_wd_popup.
+  data:ls_button TYPE   crmt_thtmlb_button,
+       lt_buttons TYPE crmt_thtmlb_button_t.
+
+*lr_entity = get_current_entity( ).
+
+**  CHECK lr_entity IS BOUND.
+*  CLEAR ls_button.
+*  ls_button-text     = 'Accept'.
+*  ls_button-tooltip  = 'Accept'.
+*  ls_button-on_click = 'ACCEPT'.                            "#EC NOTEXT
+*  ls_button-enabled  = abap_true.
+*  APPEND ls_button TO lt_buttons.
+*
+*  CLEAR ls_button.
+*  ls_button-text     = 'Ignore'.
+*  ls_button-tooltip  = 'Ignore'.
+*  ls_button-on_click = 'IGNORE'.                            "#EC NOTEXT
+*  ls_button-enabled  = abap_true.
+*  APPEND ls_button TO lt_buttons.
+*
+*  CLEAR ls_button.
+*  ls_button-text     = 'Cancel'.
+*  ls_button-tooltip  = 'Cancel'.
+*  ls_button-on_click = 'CANCEL1'.                            "#EC NOTEXT
+*  ls_button-enabled  = abap_true.
+*  APPEND ls_button TO lt_buttons.
+
+  CALL METHOD comp_controller->window_manager->create_popup_2_confirm
+      EXPORTING
+        iv_title          = lv_title
+        iv_text           = lv_text
+        iv_btncombination = if_bsp_wd_window_manager=>co_btncomb_yesnocancel
+*         IV_CUSTOMBUTTONS  = lt_buttons
+      RECEIVING
+        rv_result         = gr_confirm_popup.
+
+  gr_confirm_popup->set_on_close_event( iv_event_name = 'confirm_popup_closed_1' iv_view = me ). "#EC NOTEXT
+
+
+  gr_confirm_popup->open( ).
+
+  DATA: lr_cmp TYPE REF TO cl_cpg_main_bspwdcomponen_impl.
+
+  lr_cmp ?= me->comp_controller.
+  lr_cmp->typed_context->campaign->collection_wrapper->publish_current( ).
+
+*  CHECK check_before_save( ) IS INITIAL.
+*
+*  DATA lr_entity    TYPE REF TO cl_crm_bol_entity.
+*  DATA lv_title     TYPE string.
+*  DATA lv_text      TYPE string.
+**  DATA gr_confirm_popup TYPE REF TO if_bsp_wd_popup.
+*
+**lr_entity = get_current_entity( ).
+*
+**  CHECK lr_entity IS BOUND.
+*
+*  CALL METHOD comp_controller->window_manager->create_popup_2_confirm
+*      EXPORTING
+*        iv_title          = lv_title
+*        iv_text           = lv_text
+*        iv_btncombination = if_bsp_wd_window_manager=>co_btncomb_yesnocancel
+**         IV_CUSTOMBUTTONS  =
+*      RECEIVING
+*        rv_result         = gr_confirm_popup.
+*
+*  gr_confirm_popup->set_on_close_event( iv_event_name = 'CONFIRM_POPUP_CLOSED' iv_view = me ). "#EC NOTEXT
+*
+*
+*  gr_confirm_popup->open( ).
+*
+*  DATA: lr_cmp TYPE REF TO cl_cpg_main_bspwdcomponen_impl.
+*
+*  lr_cmp ?= me->comp_controller.
+*  lr_cmp->typed_context->campaign->collection_wrapper->publish_current( ).
+endmethod.
+
