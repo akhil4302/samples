@@ -1,0 +1,941 @@
+*&---------------------------------------------------------------------*
+*& Report  Z_SALES_ORDER_DETAILS_REPORT
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT  z_sales_order_details_report.
+
+TYPE-POOLS: slis.
+
+******************************Data Declaration****************************************
+**************************************************************************************
+******************************Types***************************************************
+
+TYPES: BEGIN OF ty_final,
+*  VKORG TYPE VKORG,    "Sales Organization
+*WERKS TYPE WERKS_EXT,   "Plant
+*ERDAT TYPE ERDAT,    "date of Creation
+*AUART TYPE AUART,    "SALES DOCUMENT TYPE
+*VBELN TYPE VBELN_VA, "Sales Document
+*POSNR TYPE POSNR,     "line item
+*MATNR  TYPE MATNR,      "Material number
+*ARKTX TYPE ARKTX,       "MATERIAL DESCRIPTION
+*KWMENG TYPE WMENG,   "SALES ORDER QTY
+*NETWR   TYPE NETWR_AP,                "SALES VALUE
+*WAERK TYPE WAERK,     "cURRENCY
+*D_VBELN TYPE VBELN_VL, "DELIVERY NUMBER
+*LFIMG TYPE LFIMG,    "DELIVERED QTY
+*OQTY TYPE WMENG,          "OPEN QUANTITY
+*OQYV TYPE VBELN_VL,   "Open Qty value
+*VBEL TYPE VBELN_VF,  "Invoice number
+*FKIMG  TYPE FKIMG,     "INVOICED QTY
+*I_NETWR  TYPE NETWR_FP,   "INVOICED VALUE
+
+         kunnr TYPE kunnr,       "Customer Number
+         name1 TYPE name1_gp,     "Customer Name1
+         vbeln TYPE vbeln_va, "Sales Document
+         vkorg TYPE vkorg,    "Sales Organization
+         erdat TYPE erdat,    "date of Creation
+         audat TYPE audat,    "DOCUMENT DATE
+         auart TYPE auart,    "SALES DOCUMENT TYPE
+         werks TYPE werks_ext,   "Plant
+         matnr  TYPE matnr,      "Material number
+         posnr  TYPE posnr_va,   "Sales Document Item
+         arktx TYPE arktx,       "MATERIAL DESCRIPTION
+         wmeng TYPE wmeng,   "SALES ORDER QTY
+         kwmeng  TYPE kwmeng,                " SALES ORDER QTY
+         netwr   TYPE netwr_ap,                "SALES VALUE
+         waerk   TYPE waerk,                  "CURRENCY
+         d_vbeln TYPE vbeln_vl, "DELIVERY NUMBER
+         d_posnr TYPE posnr_vl, "DELIVERY ITEM
+         lfimg TYPE lfimg,    "DELIVERED QTY
+         lfimg_t TYPE lfimg,
+         fkimg  TYPE fkimg,     "INVOICED QTY
+         i_netwr  TYPE netwr_fp,   "INVOICED VALUE
+         i_vbeln  TYPE vbeln_vf, "BILLING DOC
+         i_posnr  TYPE posnr_vf, "BILLING ITEM
+         i_waerk TYPE waerk,     "cURRENCY
+*         D_VBELN TYPE VBELN_NACH,  "DELIVERED document
+*         D_POSNN TYPE POSNR_NACH,  "DELIVERED item of an SD document
+*         D_RFMNG TYPE RFMNG,       "DELIVERED quantity in base unit of measure
+*         I_VBELN TYPE VBELN_NACH,  "INVOICE document
+*         I_POSNN TYPE POSNR_NACH,  "INVOICE item of an SD document
+*         I_RFMNG TYPE RFMNG,       "INVOICE quantity
+*         I_RFWRT TYPE RFWRT,       "INVOICE VALUE
+*         I_WAERS TYPE WAERS_V,     "Statistics currency
+         oqty TYPE wmeng,          "OPEN QUANTITY
+         oqtv TYPE netwr_ap,       "Open quantity value
+       END OF ty_final,
+       BEGIN OF ty_vbak,
+         vbeln TYPE vbeln_va, "Sales Document
+         kunnr TYPE kunag,    "SOLD-TO-PARTY
+         vkorg TYPE vkorg,    "Sales Organization
+         erdat TYPE erdat,    "date of Creation
+         audat TYPE audat,    "DOCUMENT DATE
+         auart TYPE auart,    "SALES DOCUMENT TYPE
+       END OF ty_vbak,
+       BEGIN OF ty_vbap,
+         posnr  TYPE posnr_va,   "Sales Document Item
+         vbeln  TYPE vbeln_va,   "sales document
+         werks TYPE werks_ext,   "Plant
+         matnr  TYPE matnr,      "Material number
+         arktx TYPE arktx,       "MATERIAL DESCRIPTION
+         kwmeng  TYPE kwmeng,                " SALES ORDER QTY
+         netwr   TYPE netwr_ap,                "SALES VALUE
+         waerk   TYPE waerk,                  "CURRENCY
+         i_vbeln  TYPE vbeln_vf, "BILLING DOC
+*           aubel type vbeln_va,  "SALES DOCUMENT
+           d_vbeln TYPE vbeln_vl, "DELIVERY NUMBER
+       END OF ty_vbap,
+       BEGIN OF ty_kna1,
+         kunnr TYPE kunnr,       "Customer Number
+         name1 TYPE name1_gp,     "Customer Name1
+       END OF ty_kna1,
+       BEGIN OF ty_vbep,
+         vbeln TYPE vbeln_va,
+         posnr TYPE posnr_va,
+         wmeng TYPE wmeng,   "SALES ORDER QTY
+       END OF ty_vbep,
+       BEGIN OF ty_lips,
+          vbelv TYPE vbelv,       "SALES DOC NUMBER
+          posnv TYPE posnv,       "SALES ITEM
+         matnr  TYPE matnr,    "MATERIAL NO
+          d_vbeln TYPE vbeln_vl, "DELIVERY NUMBER
+          d_posnr TYPE posnr_vl, "DELIVERY ITEM
+          lfimg TYPE lfimg,    "DELIVERED QTY
+         END OF ty_lips,
+         BEGIN OF ty_temp,
+           i_vbeln  TYPE vbeln_vf, "BILLING DOC
+           aubel TYPE vbeln_va,  "SALES DOCUMENT
+           d_vbeln TYPE vbeln_vl, "DELIVERY NUMBER
+           matnr  TYPE matnr,    "MATERIAL NO
+           END OF ty_temp,
+         BEGIN OF ty_vbrp,
+
+           i_vbeln  TYPE vbeln_vf, "BILLING DOC
+           i_posnr  TYPE posnr_vf, "BILLING ITEM
+           matnr  TYPE matnr,    "MATERIAL NO
+           fkimg  TYPE fkimg,     "INVOICED QTY
+           i_netwr  TYPE netwr_fp,   "INVOICED VALUE
+           aubel  TYPE vbeln_va, "SALES DOCUMENT
+           END OF ty_vbrp,
+           BEGIN OF ty_vbrk,
+             vbeln TYPE vbeln_vf,  "BILLING DOC
+             i_waerk TYPE waerk,     "cURRENCY
+             END OF ty_vbrk.
+
+
+*       BEGIN OF TY_D_VBFA,         "DELIVERY DETAILS
+*         D_VBELV TYPE VBELN_VON,     "SALES ORDER DOCUMENT
+*         D_POSNV TYPE POSNR_VON,     "sALES ORDER ITEM
+*         D_VBELN TYPE VBELN_NACH,  "DELIVERED document
+*         D_POSNN TYPE POSNR_NACH,  "DELIVERED item of an SD document
+*         D_RFMNG TYPE RFMNG,       "DELIVERED quantity in base unit of measure
+*       END OF TY_D_VBFA,
+*       BEGIN OF TY_I_VBFA,         "INVOICE DETAILS
+*         I_VBELV TYPE VBELN_VON,   "DELIVERY DOC
+*         I_POSNV TYPE POSNR_VON,   "DELIVERY ITEM
+*         I_VBELN TYPE VBELN_NACH,  "INVOICE document
+*         I_POSNN TYPE POSNR_NACH,  "INVOICE item of an SD document
+*         I_RFMNG TYPE RFMNG,       "INVOICE quantity
+*         I_RFWRT TYPE RFWRT,       "INVOICE VALUE
+*         I_WAERS TYPE WAERS_V,     "Statistics currency
+*        END OF TY_I_VBFA.
+
+CONSTANTS: c_key       TYPE char1     VALUE 'X',
+           c_mark_x    TYPE char1     VALUE 'X',
+           c_sum       TYPE char1     VALUE 'X',
+           c_dec_out   TYPE char6     VALUE '0',
+           c_decs      TYPE char6     VALUE ' ',
+           c_just      TYPE char1     VALUE 'R',
+           c_just_l    TYPE char1     VALUE 'L',
+           c_space     TYPE char1     VALUE ' ',
+           c_formname_top_of_page TYPE slis_formname
+                                      VALUE 'TOP_OF_PAGE',
+           c_s         TYPE char1     VALUE 'S',
+           c_h         TYPE char1     VALUE 'H',
+           c_zero      TYPE char1     VALUE '0'.
+*--------------------------------------------------------------------*
+* Data for ALV Display
+*--------------------------------------------------------------------*
+DATA: it_fieldcat    TYPE  slis_t_fieldcat_alv,
+      wa_fieldcat    TYPE  slis_fieldcat_alv,
+      it_event       TYPE  slis_t_event,
+      it_sortinfo    TYPE  slis_t_sortinfo_alv,
+      wa_layout      TYPE  slis_layout_alv,
+      it_heading     TYPE  slis_t_listheader,
+      it_sort        TYPE  slis_t_sortinfo_alv,
+      wa_sort        TYPE  slis_sortinfo_alv.
+
+***************************work area and tables****************************************
+
+DATA : wa_final TYPE ty_final,
+       it_final TYPE STANDARD TABLE OF ty_final,
+       wa_vbak TYPE ty_vbak,
+       it_vbak TYPE STANDARD TABLE OF ty_vbak,
+       wa_vbap TYPE ty_vbap,
+       it_vbap TYPE STANDARD TABLE OF ty_vbap,
+       it_vbap_temp TYPE STANDARD TABLE OF ty_vbap,
+       wa_kna1 TYPE ty_kna1,
+       it_kna1 TYPE STANDARD TABLE OF ty_kna1,
+       wa_vbep TYPE ty_vbep,
+       it_vbep TYPE STANDARD TABLE OF ty_vbep,
+       wa_lips TYPE ty_lips,
+       it_lips TYPE STANDARD TABLE OF ty_lips,
+       it_lips_temp TYPE STANDARD TABLE OF ty_lips,
+       wa_vbrp TYPE ty_vbrp,
+       it_vbrp TYPE STANDARD TABLE OF ty_vbrp,
+       wa_vbrk TYPE ty_vbrk,
+       it_vbrk TYPE STANDARD TABLE OF ty_vbrk,
+       wa_temp TYPE ty_temp,
+       it_temp TYPE STANDARD TABLE OF ty_temp,
+       lv_tabix TYPE sy-tabix,
+lv_lfimg TYPE lfimg,
+  lv_final TYPE lfimg,
+  lv_fkimg TYPE fkimg.
+*       WA_D_VBFA TYPE TY_D_VBFA,
+*       IT_D_VBFA TYPE STANDARD TABLE OF TY_D_VBFA,
+*       WA_I_VBFA TYPE TY_I_VBFA,
+*       IT_I_VBFA TYPE STANDARD TABLE OF TY_I_VBFA.
+
+**************************selection screen***************************************
+SELECTION-SCREEN : BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+SELECT-OPTIONS: s_vkorg FOR wa_vbak-vkorg. "Sales Organization
+SELECT-OPTIONS: s_werks FOR wa_vbap-werks OBLIGATORY."Plant
+SELECT-OPTIONS: s_name1 FOR wa_kna1-name1. "Customer Name1
+SELECT-OPTIONS: s_matnr FOR wa_vbap-matnr. "Material Number
+SELECT-OPTIONS: s_erdat FOR wa_vbak-erdat. "Sales order creation date
+SELECT-OPTIONS: s_vbeln FOR wa_vbak-vbeln. "Sales Order Number
+SELECTION-SCREEN : END OF BLOCK b1.
+
+START-OF-SELECTION.
+  PERFORM get_data.
+
+END-OF-SELECTION.
+  PERFORM display_info.
+*&---------------------------------------------------------------------*
+*&      Form  GET_DATA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM get_data.
+*********************************************************************************************
+***-------------------------------Fetching data from VBAK------------------------------------*
+**********************************************************************************************
+  SELECT vbeln  "Sales Document
+         kunnr  "SOLD-TO-PARTY
+         vkorg  "Sales Organization
+         erdat  "date of Creation
+         audat  "DOCUMENT DATE
+         auart  "SALES DOCUMENT TYPE
+    FROM vbak INTO TABLE it_vbak WHERE vbeln IN s_vbeln
+                                   AND vkorg IN s_vkorg
+                                   AND erdat IN s_erdat.
+*********************************************************************************************
+***----------------------------Fetching Customer data---------------------------------------*
+*********************************************************************************************
+  IF sy-subrc = 0.
+    SORT it_vbak BY vbeln.
+*          SELECT KUNNR "CUSTOMER NUMBER1
+*                 NAME1 "CUSTOMER NAME1
+*             FROM KNA1 INTO TABLE IT_KNA1 FOR ALL ENTRIES IN IT_VBAK WHERE KUNNR = IT_VBAK-KUNNR
+*                                                                      AND NAME1 IN S_NAME1.
+*             IF SY-SUBRC = 0.
+*                 SORT IT_KNA1 BY KUNNR.
+*           ENDIF.
+*           ELSE.
+*        MESSAGE : TEXT-026 TYPE 'I'.
+*    LEAVE PROGRAM.
+  ENDIF.
+  IF it_vbak[] IS NOT INITIAL.
+    LOOP AT it_vbak INTO wa_vbak.
+      MOVE wa_vbak-vkorg TO wa_final-vkorg.
+      MOVE wa_vbak-erdat TO wa_final-erdat.
+      MOVE wa_vbak-audat TO wa_final-audat.
+      MOVE wa_vbak-auart TO wa_final-auart.
+
+*********************************************************************************************
+***----------------------------Fetching data from VBAP ---------------------------------------*
+*********************************************************************************************
+
+      IF it_vbak[] IS NOT INITIAL.
+        SELECT   posnr  "Sales Document Item
+                 vbeln  "sales document
+                 werks  "Plant
+                 matnr  "Material number
+                 arktx  "MATERIAL DESCRIPTION
+                 kwmeng "SALES ORDER QTY
+                 netwr  "SALES VALUE
+                 waerk  "CURRENCY
+            FROM vbap INTO TABLE it_vbap FOR ALL ENTRIES IN it_vbak WHERE vbeln = it_vbak-vbeln
+                                                                     AND matnr IN s_matnr
+                                                                     AND werks IN s_werks.
+
+
+
+********************************************************************************************
+**----------------------------Fetching data from VBEP ---------------------------------------*
+********************************************************************************************
+        IF sy-subrc = 0.
+          SORT it_vbap BY vbeln.
+*  SELECT VBELN
+*         POSNR "LINE ITEM
+*         WMENG "SALES ORDER QUANTITY
+*    FROM VBEP INTO TABLE IT_VBEP FOR ALL ENTRIES IN IT_VBAP WHERE VBELN = IT_VBAP-VBELN
+*                                                              AND POSNR = IT_VBAP-POSNR.
+*    IF SY-SUBRC = 0.
+*      SORT IT_VBEP BY VBELN.
+*      ENDIF.
+        ENDIF.
+
+        IF it_vbap[] IS NOT INITIAL.
+
+          SELECT vbelv "sALES DOC NUMBER
+                 posnv "SALES ITEM
+                 matnr "Material number
+                 vbeln "dELIVERY NUMBER
+                 posnr "DELIVERY ITEM
+                 lfimg "DELIVERED QTY
+            FROM lips INTO TABLE it_lips FOR ALL ENTRIES IN it_vbap WHERE
+                                           vbelv = it_vbap-vbeln
+                                           AND posnv = it_vbap-posnr
+                                           AND matnr IN s_matnr.
+          IF sy-subrc = 0.
+            SORT it_lips BY d_vbeln.
+          ENDIF.
+*
+          SELECT vbeln  "BILLING DOC
+                 posnr  "BILLING ITEM
+                 matnr  "MATERIAL NO
+                 fkimg  "INVOICED QTY
+                 netwr  "INVOICED VALUE
+                 aubel  "SALES DOCUMENT
+             FROM vbrp INTO TABLE it_vbrp WHERE aubel = wa_vbak-vbeln.
+*                                      AND matnr IN s_matnr.
+          IF sy-subrc = 0.
+            SORT it_vbrp BY i_vbeln.
+            SELECT vbeln  "BILLING DOC
+                   waerk  "cURRENCY
+              FROM vbrk INTO TABLE it_vbrk FOR ALL ENTRIES IN it_vbrp WHERE vbeln = it_vbrp-i_vbeln.
+            IF sy-subrc = 0.
+              SORT it_vbrk BY vbeln.
+            ENDIF.
+
+          ENDIF.
+          REFRESH: it_lips_temp, it_vbap_temp.
+*          it_vbap_temp[] = it_vbap[].
+          it_lips_temp[] = it_lips[].
+          LOOP AT it_vbrk INTO wa_vbrk.
+            CLEAR: wa_vbrp.
+            READ TABLE it_vbrp INTO wa_vbrp WITH KEY i_vbeln = wa_vbrk-vbeln.
+            IF sy-subrc IS INITIAL.
+              MOVE-CORRESPONDING wa_vbrp TO wa_temp.
+            ENDIF.
+            CLEAR: wa_lips.
+            READ TABLE it_lips_temp INTO wa_lips WITH KEY vbelv = wa_vbrp-aubel.
+            IF sy-subrc IS INITIAL.
+              MOVE wa_lips-d_vbeln TO wa_temp-d_vbeln.
+              DELETE it_lips_temp INDEX 1.
+            ENDIF.
+            APPEND wa_temp TO it_temp.
+            CLEAR: wa_temp, wa_lips.
+          ENDLOOP.
+
+*            loop at it_lips into wa_lips.
+*              read table it_lips into wa_lips with key vbelv = wa_vbrp-aubel.
+*              move wa_lips-d_vbeln to wa_temp-d_vbeln.
+          DATA: flag TYPE c.
+          CLEAR: wa_vbap.
+          LOOP AT it_vbap INTO wa_vbap.
+            CLEAR:wa_temp,
+                  flag .
+            LOOP AT it_temp INTO wa_temp WHERE aubel = wa_vbap-vbeln
+                                         AND   matnr = wa_vbap-matnr.
+*              IF wa_temp-matnr = wa_vbap-matnr.
+              flag = 'X'.
+              MOVE-CORRESPONDING wa_temp TO wa_vbap.
+              APPEND wa_vbap TO it_vbap_temp.
+*        clear: wa_vbap, wa_temp.
+*              ELSE.
+*                EXIT.
+*              ENDIF.
+            ENDLOOP.
+            IF flag = 'X'.
+              DELETE it_vbap WHERE  vbeln = wa_vbap-vbeln
+                           AND   matnr = wa_vbap-matnr.
+            ENDIF.
+            CLEAR:wa_vbap.
+          ENDLOOP.
+        ENDIF.
+      ENDIF.
+      CLEAR: wa_vbak, wa_kna1, wa_final.
+      APPEND LINES OF it_vbap_temp TO it_vbap.
+      SORT it_vbap.
+    ENDLOOP.
+  ENDIF.
+
+  SORT it_vbak BY vbeln.
+
+  IF it_vbap[] IS NOT INITIAL.
+    LOOP AT it_vbap INTO wa_vbap.
+*      READ TABLE it_lips WITH KEY matnr = wa_vbap-matnr INTO wa_lips.
+      lv_tabix = sy-tabix.
+      READ TABLE it_vbak INTO wa_vbak WITH KEY vbeln = wa_vbap-vbeln
+      BINARY SEARCH.
+      IF sy-subrc = 0.
+        MOVE-CORRESPONDING wa_vbak TO wa_final.
+      ENDIF.
+      MOVE wa_vbap-vbeln TO wa_final-vbeln. "sales document
+      MOVE wa_vbap-posnr TO wa_final-posnr. "Sales Document Item
+      MOVE wa_vbap-werks TO wa_final-werks. "Plant
+      MOVE wa_vbap-matnr TO wa_final-matnr. "Material number
+      MOVE wa_vbap-arktx TO wa_final-arktx. "MATERIAL DESCRIPTION
+      MOVE wa_vbap-kwmeng TO wa_final-kwmeng."SALES ORDER QTY
+*      wa_final-kwmeng = wa_final-kwmeng / 10.
+      MOVE wa_vbap-netwr TO wa_final-netwr. "SALES VALUE
+      MOVE wa_vbap-waerk TO wa_final-waerk. "CURRENCY
+      READ TABLE it_lips INTO wa_lips WITH KEY vbelv = wa_vbap-vbeln posnv = wa_vbap-posnr.
+      MOVE wa_vbap-d_vbeln TO wa_final-d_vbeln.
+      MOVE wa_lips-lfimg TO wa_final-lfimg.
+      IF wa_lips-lfimg IS NOT INITIAL.
+        IF lv_tabix = '1'.
+          MOVE wa_lips-lfimg TO wa_final-lfimg_t.
+          lv_lfimg = wa_lips-lfimg.
+        ENDIF.
+        IF lv_tabix > '1'.
+*        lv_final = wa_final-lfimg.
+          MOVE wa_lips-lfimg TO lv_lfimg.
+          wa_final-lfimg_t = lv_lfimg + wa_final-lfimg_t.
+        ENDIF.
+      ELSE.
+        MOVE wa_lips-lfimg TO wa_final-lfimg_t.
+      ENDIF.
+*      wa_final-lfimg = wa_final-lfimg / 10.
+
+      wa_final-oqty = ( wa_final-kwmeng - wa_final-lfimg_t ).   "OPEN QUANTITY = SALES ORDER QTY - DELIVERED QTY
+      wa_final-oqtv = ( wa_final-netwr / wa_final-kwmeng ) * wa_final-oqty.
+*      IF wa_final-d_vbeln IS NOT INITIAL.
+
+      MOVE wa_vbap-i_vbeln TO wa_final-i_vbeln.
+      READ TABLE it_vbrp INTO wa_vbrp WITH KEY i_vbeln = wa_vbap-i_vbeln.
+      IF sy-subrc = '0'.
+        MOVE wa_vbrp-fkimg TO wa_final-fkimg.
+        MOVE wa_vbrp-i_netwr TO wa_final-i_netwr.
+      ELSE.
+        MOVE wa_vbrp-fkimg TO wa_final-fkimg.
+        MOVE wa_vbrp-i_netwr TO wa_final-i_netwr.
+      ENDIF.
+*        IF sy-subrc = '0'.
+**          if wa_vbrp-fkimg is NOT INITIAL.
+*          if lv_tabix = '1'.
+*          MOVE wa_vbrp-fkimg TO wa_final-fkimg.
+*          wa_final-i_netwr = ( wa_final-netwr / wa_final-kwmeng ) * wa_final-fkimg.
+*          lv_fkimg = wa_vbrp-fkimg.
+*          endif.
+*        if lv_tabix > '1'.
+**        lv_final = wa_final-lfimg.
+*        MOVE wa_vbrp-fkimg TO lv_fkimg.
+*        wa_final-fkimg = lv_fkimg + wa_final-fkimg.
+*        wa_final-i_netwr = ( wa_final-netwr / wa_final-kwmeng ) * wa_final-fkimg.
+*      endif.
+*      else.
+*        MOVE wa_vbrp-fkimg TO wa_final-fkimg.
+*        wa_final-i_netwr = ( wa_final-netwr / wa_final-kwmeng ) * wa_final-fkimg.
+*      endif.
+      CLEAR: wa_vbap, wa_lips, wa_vbrp.
+      APPEND wa_final TO it_final.
+*      clear: wa_final.
+    ENDLOOP.
+  ENDIF.
+
+
+*      IF IT_VBAP[] IS NOT INITIAL.
+**********************************************************************************************
+***----------------------------Fetching DELIVERY data---------------------------------------*
+*********************************************************************************************
+*  SELECT VBELV
+*         POSNV
+*         VBELN
+*         POSNN
+*         RFMNG FROM VBFA INTO TABLE IT_D_VBFA FOR ALL ENTRIES IN IT_VBAP WHERE VBELV = IT_VBAP-VBELN
+*                                                                           AND POSNV = IT_VBAP-POSNR
+*                                                                           AND VBTYP_N = 'J'.
+*********************************************************************************************
+***----------------------------Fetching INVOICE data---------------------------------------*
+*********************************************************************************************
+*
+*    IF SY-SUBRC = 0.
+*      SORT IT_D_VBFA BY D_VBELN.
+*      SELECT VBELV
+*             POSNV
+*             VBELN      "INVOICE DOC
+*             POSNN      "INVOICE ITEM
+*             RFMNG      "INVOICE quantity
+*             RFWRT      "INVOICE VALUE
+*             WAERS      "Statistics currency
+*        FROM VBFA INTO TABLE IT_I_VBFA FOR ALL ENTRIES IN IT_D_VBFA WHERE VBELV = IT_D_VBFA-D_VBELN
+*                                                                      AND POSNV = IT_D_VBFA-D_POSNN
+*                                                                      AND VBTYP_N = 'M'.
+*        IF SY-SUBRC = 0.
+*          SORT IT_I_VBFA BY I_VBELN.
+*          ENDIF.
+*ENDIF.
+*     LOOP AT IT_VBAP INTO WA_VBAP.
+*        MOVE WA_VBAP-VBELN TO WA_FINAL-VBELN.
+*        MOVE WA_VBAP-POSNR TO WA_FINAL-POSNR.
+*        MOVE WA_VBAP-WERKS TO WA_FINAL-WERKS.
+*        MOVE WA_VBAP-MATNR TO WA_FINAL-MATNR.
+*        MOVE WA_VBAP-ARKTX TO WA_FINAL-ARKTX.
+*    READ TABLE IT_VBEP INTO WA_VBEP WITH KEY VBELN = WA_VBAP-VBELN POSNR = WA_VBAP-POSNR.
+*        IF SY-SUBRC = 0.
+*       MOVE WA_VBEP-WMENG TO WA_FINAL-WMENG.
+*       WA_FINAL-WMENG = WA_FINAL-WMENG.
+*        IF IT_D_VBFA[] IS NOT INITIAL AND IT_I_VBFA[] IS NOT INITIAL.
+*        LOOP AT IT_D_VBFA INTO WA_D_VBFA.
+*
+*        READ TABLE IT_I_VBFA INTO WA_I_VBFA WITH KEY I_VBELV = WA_D_VBFA-D_VBELN I_POSNV = WA_D_VBFA-D_POSNN.
+**       READ TABLE IT_D_VBFA INTO WA_D_VBFA WITH KEY VBELV = WA_VBAP-VBELN POSNV = WA_VBAP-POSNR BINARY SEARCH.
+*       IF SY-SUBRC = 0.
+*        MOVE WA_D_VBFA-D_VBELN TO WA_FINAL-D_VBELN.
+*        MOVE WA_D_VBFA-D_POSNN TO WA_FINAL-D_POSNN.
+*        MOVE WA_D_VBFA-D_RFMNG TO WA_FINAL-D_RFMNG.
+*        WA_FINAL-D_RFMNG = WA_FINAL-D_RFMNG / 10.
+*        WA_FINAL-OQTY = ( WA_FINAL-WMENG - WA_FINAL-D_RFMNG ).
+*          MOVE WA_I_VBFA-I_VBELN TO WA_FINAL-I_VBELN.
+*          MOVE WA_I_VBFA-I_POSNN TO WA_FINAL-I_POSNN.
+*          MOVE WA_I_VBFA-I_RFMNG TO WA_FINAL-I_RFMNG.
+*          MOVE WA_I_VBFA-I_RFWRT TO WA_FINAL-I_RFWRT.
+*          MOVE WA_I_VBFA-I_WAERS TO WA_FINAL-I_WAERS.
+*          APPEND WA_FINAL TO IT_FINAL.
+*        ENDIF.
+*        CLEAR: WA_D_VBFA, WA_I_VBFA.
+*        ENDLOOP.
+*ENDIF.
+*       ENDIF.
+*       CLEAR: WA_VBAP,WA_VBEP.
+*       ENDLOOP.
+*        ENDIF.
+
+
+
+
+
+
+
+
+ENDFORM.                    " GET_DATA
+*&---------------------------------------------------------------------*
+*&      Form  DISPLAY_INFO
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM display_info .
+* Define fieldcat
+  PERFORM f_fieldcat              CHANGING it_fieldcat.
+* define sorting
+  PERFORM f_sort                  CHANGING it_sort.
+* Define event
+  PERFORM f_build_event           CHANGING it_event.
+* Define heading
+  PERFORM f_set_top_page-heading  USING    it_heading.
+* Define layout
+  PERFORM f_layout                CHANGING wa_layout.
+* Display ALV Grid
+  PERFORM f_alv_display           USING    it_fieldcat
+                                           it_sortinfo
+                                           wa_layout
+                                           it_final.
+ENDFORM.                    " F_DISPLAY_INFO
+*&---------------------------------------------------------------------*
+*&      Form  F_FIELDCAT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      <--P_IT_FIELDCAT  text
+*----------------------------------------------------------------------*
+FORM f_fieldcat  CHANGING p_it_fieldcat.
+  DATA: l_v_col TYPE i.
+  PERFORM f_build_fieldcat USING 'VKORG'(002)
+                                 'Sales org'(003)
+                                 c_mark_x
+                                 c_just_l
+                                 c_space
+                                 c_decs
+                                 CHANGING l_v_col
+                                 p_it_fieldcat.
+
+  PERFORM f_build_fieldcat USING 'WERKS_EXT'(004)
+                                 'Plant'(005)
+                                 c_space
+                                 c_just_l
+                                 c_space
+                                 c_decs
+                                 CHANGING l_v_col
+                                 p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'AUDAT'(006)
+                                 'Sales Ord Creation Date'(007)
+                                 c_space
+                                 c_just_l
+                                 c_space
+                                 c_decs
+                                 CHANGING l_v_col
+                                 p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'AUART'(008)
+                                 'Sales Order Type'(009)
+                                 c_space
+                                 c_just_l
+                                 c_space
+                                 c_decs
+                                 CHANGING l_v_col
+                                 p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'VBELN'(010)
+                                'Sales Order Number'(011)
+                                c_mark_x
+                                c_just_l
+                                c_space
+                                c_decs
+                                CHANGING l_v_col
+                                p_it_fieldcat.
+
+  PERFORM f_build_fieldcat USING 'POSNR'(014)
+                               ' Line Item'(015)
+                               c_space
+                               c_just_l
+                               c_space
+                               c_decs
+                               CHANGING l_v_col
+                               p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'MATNR'(016)
+                               'Material'(017)
+                               c_space
+                               c_just_l
+                               c_space
+                               c_decs
+                               CHANGING l_v_col
+                               p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'ARKTX'(018)
+                               'Material Description'(019)
+                               c_space
+                               c_just_l
+                               c_space
+                               c_decs
+                               CHANGING l_v_col
+                               p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'KWMENG'(020)
+                               'Sales order Qty'(021)
+                               c_space
+                               c_just_l
+                               c_space
+                               c_decs
+                               CHANGING l_v_col
+                               p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'NETWR'(022)
+                               'Sales order Value'(023)
+                               c_space
+                               c_just_l
+                               c_space
+                               c_decs
+                               CHANGING l_v_col
+                               p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'WAERK'(024)
+                               'Currency'(025)
+                               c_space
+                               c_just_l
+                               c_space
+                               c_decs
+                               CHANGING l_v_col
+                               p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'OQTY'(012)
+                              'Open Qty'(013)
+                              c_space
+                              c_just_l
+                              c_space
+                              c_decs
+                              CHANGING l_v_col
+                              p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'OQTV'
+                              'Open Qty Value'
+                              c_space
+                              c_just_l
+                              c_space
+                              c_decs
+                              CHANGING l_v_col
+                              p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'LFIMG'(027)
+                               'Delivered Qty'(028)
+                               c_space
+                               c_just_l
+                               c_space
+                               c_decs
+                               CHANGING l_v_col
+                               p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'D_VBELN'
+                               'Delivery Number'
+                               c_space
+                               c_just_l
+                               c_space
+                               c_decs
+                               CHANGING l_v_col
+                               p_it_fieldcat.
+
+
+*  PERFORM F_BUILD_FIELDCAT USING 'BZIRK'
+*                             'Sales District'
+*                             C_SPACE
+*                             C_JUST_L
+*                             C_SPACE
+*                             C_DECS
+*                             CHANGING L_V_COL
+*                             P_IT_FIELDCAT.
+  PERFORM f_build_fieldcat USING 'I_VBELN'
+                            'Invoice No'
+                            c_space
+                            c_just_l
+                            c_space
+                            c_decs
+                            CHANGING l_v_col
+                            p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'FKIMG'
+                           'Invoice Qty'
+                           c_space
+                           c_just_l
+                           c_space
+                           c_decs
+                           CHANGING l_v_col
+                           p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'I_NETWR'
+                          'Invoice Value'
+                          c_space
+                          c_just_l
+                          c_space
+                          c_decs
+                          CHANGING l_v_col
+                          p_it_fieldcat.
+  PERFORM f_build_fieldcat USING 'WAERK'
+                         'Currency'
+                         c_space
+                         c_just_l
+                         c_space
+                         c_decs
+                         CHANGING l_v_col
+                         p_it_fieldcat.
+*  PERFORM F_BUILD_FIELDCAT USING 'NETWR'
+*                         'Net value'
+*                         C_SPACE
+*                         C_JUST_L
+*                         C_SPACE
+*                         C_DECS
+*                         CHANGING L_V_COL
+*                         P_IT_FIELDCAT.
+*  PERFORM F_BUILD_FIELDCAT USING 'MEINS'
+*                         'Base Unit'
+*                         C_SPACE
+*                         C_JUST_L
+*                         C_SPACE
+*                         C_DECS
+*                         CHANGING L_V_COL
+*                         P_IT_FIELDCAT.
+*  PERFORM F_BUILD_FIELDCAT USING 'WAERK'
+*                         'Document Currency'
+*                         C_SPACE
+*                         C_JUST_L
+*                         C_SPACE
+*                         C_DECS
+*                         CHANGING L_V_COL
+*                         P_IT_FIELDCAT.
+
+ENDFORM.                    " F_FIELDCAT
+*&---------------------------------------------------------------------*
+*&      Form  F_BUILD_FIELDCAT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_0788   text
+*      -->P_0789   text
+*      -->P_C_SPACE  text
+*      -->P_C_JUST_L  text
+*      -->P_C_SPACE  text
+*      -->P_C_DECS  text
+*      <--P_L_V_COL  text
+*      <--P_P_IT_FIELDCAT  text
+*----------------------------------------------------------------------*
+FORM f_build_fieldcat  USING  p_fieldname  TYPE slis_fieldname
+                             p_seltext    TYPE dd03p-scrtext_l
+                             p_key        TYPE c
+                             p_just       TYPE c
+                             p_sum        TYPE c
+                             p_dec_out    TYPE char6
+                       CHANGING p_l_v_col TYPE sy-cucol
+                        p_p_it_fieldcat TYPE slis_t_fieldcat_alv.
+  p_l_v_col               =  p_l_v_col + 1.
+  wa_fieldcat-col_pos     =  p_l_v_col.
+  wa_fieldcat-fieldname   =  p_fieldname.
+  wa_fieldcat-seltext_l   =  p_seltext.
+  wa_fieldcat-key         =  p_key.
+  wa_fieldcat-just        =  p_just.
+  wa_fieldcat-do_sum      =  p_sum.
+  wa_fieldcat-decimals_out  = p_dec_out.
+
+  APPEND wa_fieldcat TO it_fieldcat.
+  CLEAR wa_fieldcat.
+
+ENDFORM.                    " F_BUILD_FIELDCAT
+*&---------------------------------------------------------------------*
+*&      Form  F_BUILD_EVENT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      <--P_IT_EVENT  text
+*----------------------------------------------------------------------*
+FORM f_build_event  CHANGING p_it_event TYPE slis_t_event.
+  DATA: wa_event  TYPE slis_alv_event.
+  CALL FUNCTION 'REUSE_ALV_EVENTS_GET'
+    EXPORTING
+      i_list_type = 0
+    IMPORTING
+      et_events   = p_it_event.
+  SORT p_it_event BY name.
+  READ TABLE p_it_event WITH KEY name = slis_ev_top_of_page
+                                        BINARY SEARCH
+                                        INTO wa_event.
+  IF sy-subrc = 0.
+    MOVE c_formname_top_of_page TO wa_event-form.
+    APPEND wa_event TO p_it_event.
+    CLEAR wa_event.
+  ENDIF.
+ENDFORM.                    " F_BUILD_EVENT
+*&---------------------------------------------------------------------*
+*&      Form  TOP_OF_PAGE
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM top_of_page .
+  CALL FUNCTION 'REUSE_ALV_COMMENTARY_WRITE'
+    EXPORTING
+      it_list_commentary = it_heading[].
+ENDFORM.                    "TOP_OF_PAGE
+*&---------------------------------------------------------------------*
+*&      Form  F_SET_TOP_PAGE-HEADING
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_IT_HEADING  text
+*----------------------------------------------------------------------*
+FORM f_set_top_page-heading  USING    p_it_heading.
+  DATA: wa_heading TYPE slis_listheader.
+  DATA: pdate  TYPE char100.
+  DATA: indate TYPE char10.
+  DATA: otdate TYPE char10.
+
+  wa_heading-typ = c_h.
+  wa_heading-info = 'Sales Report'(101).
+  APPEND wa_heading TO it_heading.
+  CLEAR wa_heading.
+* Program name
+  wa_heading-typ = c_s.
+  wa_heading-key = 'Program:'(102).
+  wa_heading-info = sy-repid.
+  APPEND wa_heading TO it_heading.
+  CLEAR wa_heading.
+* user name
+  wa_heading-typ = c_s.
+  wa_heading-key = 'User:'(103).
+  wa_heading-info = sy-uname.
+  APPEND wa_heading TO it_heading.
+  CLEAR wa_heading.
+  wa_heading-typ = c_s.
+  wa_heading-key = ''.
+  wa_heading-info = ''.
+  APPEND wa_heading TO it_heading.
+  CLEAR wa_heading.
+ENDFORM.                    " F_SET_TOP_PAGE-HEADING
+*&---------------------------------------------------------------------*
+*&      Form  F_LAYOUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      <--P_WA_LAYOUT  text
+*----------------------------------------------------------------------*
+FORM f_layout  CHANGING p_wa_layout.
+  CLEAR wa_layout.
+  wa_layout-zebra             = c_mark_x.
+  wa_layout-no_input          = c_mark_x.
+  wa_layout-colwidth_optimize = c_mark_x.
+  wa_layout-window_titlebar   = 'Sales Report'(100).
+ENDFORM.                    " F_LAYOUT
+*&---------------------------------------------------------------------*
+*&      Form  F_ALV_DISPLAY
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_IT_FIELDCAT  text
+*      -->P_IT_SORTINFO  text
+*      -->P_WA_LAYOUT  text
+*      -->P_IT_FINAL  text
+*----------------------------------------------------------------------*
+FORM f_alv_display  USING  p_it_fieldcat    TYPE slis_t_fieldcat_alv
+                             p_it_sortinfo    TYPE slis_t_sortinfo_alv
+                             p_wa_layout      TYPE slis_layout_alv
+                             p_it_final LIKE it_final[].
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program = sy-repid
+      is_layout          = wa_layout
+      it_fieldcat        = it_fieldcat
+      i_default          = 'X'
+      i_save             = 'A'
+      it_sort            = it_sort
+      it_events          = it_event
+    TABLES
+      t_outtab           = it_final
+    EXCEPTIONS
+      program_error      = 1
+      OTHERS             = 2.
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+            WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ENDIF.
+
+ENDFORM.                    " F_ALV_DISPLAY
+*&---------------------------------------------------------------------*
+*&      Form  F_SORT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      <--P_IT_SORT  text
+*----------------------------------------------------------------------*
+FORM f_sort  CHANGING p_it_sort.
+*  CLEAR WA_SORT.
+*  WA_SORT-SPOS = 1.
+*  WA_SORT-FIELDNAME = 'BUKRS_VF'.
+*  WA_SORT-UP = C_MARK_X.
+*  APPEND WA_SORT TO IT_SORT.
+*
+*  CLEAR WA_SORT.
+*  WA_SORT-SPOS = 1.
+*  WA_SORT-FIELDNAME = 'KUNNR'.
+*  WA_SORT-UP = C_MARK_X.
+*  APPEND WA_SORT TO IT_SORT.
+*
+*  CLEAR WA_SORT.
+*  WA_SORT-SPOS = 1.
+*  WA_SORT-FIELDNAME = 'VBELN'.
+*  WA_SORT-UP = C_MARK_X.
+*  APPEND WA_SORT TO IT_SORT.
+
+*  CLEAR WA_SORT.
+*  WA_SORT-SPOS = 1.
+*  WA_SORT-FIELDNAME = 'VBELN_VF'.
+*  WA_SORT-UP = C_MARK_X.
+*  APPEND WA_SORT TO IT_SORT.
+ENDFORM.                    " DISPLAY_INFO
