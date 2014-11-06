@@ -1,0 +1,27 @@
+<apex:page standardController="Account" extensions="ext">
+ <apex:form >
+  <apex:sectionHeader title="Account Prac"/>
+   <apex:pageBlock id="A" title="Account Prac" mode="edit">    
+    <apex:pageBlockSection >
+     <apex:inputField label="Name" value="{!account.name}"/> <br></br>
+     <apex:inputField id="bo" label="Main City" value="{!account.Main_City__c}"/> <br></br>  
+     <apex:inputCheckbox label="Copy" onClick="Copy('{!$Component.bo}', '{!$Component.b1}', this)"/> <br></br>
+     <apex:inputField id="b1" label="Mailing city" value="{!account.Mailing_city__c}"/> <br></br>
+     <apex:commandButton action="{!Save}" value="Save"/>
+     <script type="text/javascript">
+      function Copy(bo, b1, cb)
+      {
+       if(cb.checked)
+       {
+        document.getElementById(b1).value = document.getElementById(bo).value;
+       }
+       else
+       {
+        document.getElementById(b1).value = "";
+       }
+      }
+     </script>
+     </apex:pageBlockSection>     
+   </apex:pageBlock>
+   </apex:form>
+</apex:page>
