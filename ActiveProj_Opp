@@ -1,0 +1,67 @@
+trigger ActiveProj_Opp on Project__c (After insert, After delete, After update) 
+{
+    set<id> set1 = new set<id>();
+    list<opportunity> olist = new list<opportunity>();
+    list<opportunity> oplist = new list<opportunity>();
+    
+    if(trigger.isinsert)
+    {
+    for(project__c pr: trigger.new)
+    {
+        if(pr.type__C == 'Active')
+        {
+            set1.add(pr.Opportunity__c);
+        }
+    }
+        if(set1.size()>0 && set1!=null)
+        {
+            olist = [select id,active_project__c from opportunity where id in:set1];
+            for(opportunity o:olist)
+            {
+                o.active_project__c = True;
+                oplist.add(o);
+            }
+        }
+    }
+	
+	if(trigger.isupdate)
+    {
+    for(project__c pr: trigger.new)
+    {
+        if(pr.type__C != 'Active')
+        {
+            set1.add(pr.Opportunity__c);
+        }
+    }
+        if(set1.size()>0 && set1!=null)
+        {
+            olist = [select id,active_project__c from opportunity where id in:set1];
+            for(opportunity o:olist)
+            {
+                o.active_project__c = False;
+                oplist.add(o);
+            }
+        }
+    }
+	
+    if(trigger.isdelete)
+    {
+        for(project__c pr: trigger.old)
+        {
+            set1.add(pr.Opportunity__c);
+        }
+        if(set1.size()>0 && set1!=null)
+        {
+            olist = [select id,active_project__c from opportunity where id in:set1];
+            for(opportunity o:olist)
+            {
+                o.active_project__c = False;
+                oplist.add(o);
+            }
+        }
+    }
+    if(oplist.size()>0 && oplist!=null)
+    {
+        update oplist;
+    }
+}
