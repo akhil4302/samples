@@ -1,0 +1,30 @@
+trigger HODupdate on Department__c (before insert) 
+{
+    list<student__C> slist = new list<student__C>();
+    list<user> ulist = new list<user>();
+    set<id> set1 = new set<id>();
+    map<id,string> map1 = new map<id,string>();
+    if(trigger.isinsert)
+    {
+    for(department__C dp:trigger.new)
+    {
+        set1.add(dp.student__C);
+    }
+    if(set1.size()>0 && set1!=null)
+    {
+        slist = [select id,ownerid from student__C where id in:set1];
+        for(student__C st: slist)
+        {
+            ulist = [select id,name from user where id =:st.ownerid];
+        }
+        for(user u: ulist)
+        {
+            map1.put(u.id,u.name);
+            for(department__C dp1 : trigger.new)
+            {
+                dp1.hod__C = map1.get(u.id);
+            }
+        }
+    }
+    }   
+}
