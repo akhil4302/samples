@@ -1,0 +1,50 @@
+trigger Phone_update on Account (after update)
+{
+ 
+  if(checkRecursive.runOnce())
+  {
+  list<contact> clist = new list<contact>();
+  for(account a:trigger.new)
+  {
+    contact c = [select id,name from contact where accountid=: a.id];
+    c.account_phone__c = a.phone;
+    clist.add(c);
+  }  
+  if(clist!=null)
+  {
+   update clist;
+  }
+  }
+}
+
+
+rigger phone_update_2 on Contact (after update) 
+{
+  list<account> alist = new list<account>();
+  for(contact c: trigger.new)
+  {
+    account a = [select id,phone from account where id =: c.accountid];
+    a.phone = c.account_phone__c;
+    alist.add(a);
+  }
+  if(alist!=null)
+  {
+    update alist;
+  }
+}
+
+
+public Class checkRecursive{
+    private static boolean run = true;
+    public static boolean runOnce(){
+    if(run){
+     run=false;
+     return true;
+    }else{
+        return run;
+    }
+    }
+}
+
+
+
