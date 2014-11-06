@@ -1,0 +1,77 @@
+METHOD get_v_partner_fct.
+
+*  DATA:
+*       ls_map    TYPE if_bsp_wd_valuehelp_f4descr=>gtype_param_mapping,
+*       lt_inmap  TYPE if_bsp_wd_valuehelp_f4descr=>gtype_param_mapping_tab,
+*       lt_outmap TYPE if_bsp_wd_valuehelp_f4descr=>gtype_param_mapping_tab.
+*
+*  ls_map-context_attr = 'PARTNER_FCT'.
+*  ls_map-f4_attr      = 'KEY'.
+*  INSERT ls_map INTO TABLE lt_outmap.
+*
+*  CREATE OBJECT rv_valuehelp_descriptor
+*    TYPE
+*      cl_bsp_wd_valuehelp_f4descr
+*    EXPORTING
+*      iv_help_id                  = '(CL_CRM_UIU_PARTNER_FCT_VH)'
+*      iv_help_id_kind             = if_bsp_wd_valuehelp_f4descr=>help_id_kind_comp
+*      iv_input_mapping            = lt_inmap
+*      iv_output_mapping           = lt_outmap
+*      iv_trigger_submit           = abap_true.
+
+*  TYPES:BEGIN OF ty_partner,
+*        PARTNER_FCT TYPE COMT_PARTNER_FCT,
+*        END OF ty_partner.
+
+  TYPES:BEGIN OF ty_desc,
+        PARTNER_FCT TYPE COMT_PARTNER_FCT,
+        DESCRIPTION TYPE STRING,
+        END OF ty_desc.
+
+  DATA:lt_ddlb TYPE bsp_wd_dropdown_table,
+        lt_partner TYPE TABLE OF ty_desc,
+        ls_partner TYPE ty_desc,
+        ls_ddlb TYPE bsp_wd_dropdown_line,
+        lt_desc TYPE TABLE OF ty_desc,
+        ls_desc TYPE ty_desc.
+
+  CASE iv_mode.
+    WHEN 'D'.
+      CREATE OBJECT rv_valuehelp_descriptor
+        TYPE
+          cl_crm_uiu_ddlb
+        EXPORTING
+          iv_source_type  = 'T'.
+
+    WHEN 'R'.
+      IF gr_ddlb_partner_fct IS NOT BOUND.
+*   Get values for Partner Function
+        if ZL_CPGAS_AD_BSPWDCOMPONEN_IMPL=>gv_flag eq 'X'.
+          select PARTNER_FCT into table lt_partner from CRMC_PARTNER_PDP where DETERM_PROC = 'ZCP_PDP'.
+          select PARTNER_FCT DESCRIPTION into table lt_desc from CRMC_PARTNER_FT for ALL ENTRIES IN lt_partner WHERE partner_fct = lt_partner-partner_fct and SPRAS eq sy-langu.
+          IF lt_desc IS NOT INITIAL.
+            LOOP AT lt_desc INTO ls_desc.
+              MOVE ls_desc-PARTNER_FCT TO ls_ddlb-key.
+              MOVE ls_desc-DESCRIPTION TO ls_ddlb-value.
+              APPEND ls_ddlb TO lt_ddlb.
+              CLEAR ls_ddlb.
+            ENDLOOP.
+          endif.
+          IF lt_ddlb IS NOT INITIAL.
+            CREATE OBJECT gr_ddlb_partner_fct
+              EXPORTING
+                iv_source_type = 'T'.
+            gr_ddlb_partner_fct->set_selection_table( it_selection_table = lt_ddlb ).
+          ENDIF.
+        ELSE.
+          lt_ddlb = cl_crm_uiu_cust_get=>get_values_for_field( iv_fieldname   = 'PARTNER_FCT' ).
+          CREATE OBJECT gr_ddlb_partner_fct
+            EXPORTING
+              iv_source_type = 'T'.
+          gr_ddlb_partner_fct->set_selection_table( it_selection_table = lt_ddlb ).
+        ENDIF.
+      ENDIF.
+      rv_valuehelp_descriptor = gr_ddlb_partner_fct.
+  ENDCASE.
+
+ENDMETHOD.
