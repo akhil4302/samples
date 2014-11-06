@@ -1,0 +1,280 @@
+TYPES: begin of wlink,
+           LINK_ID type crmt_ui_logical_link_id,
+           TITLE   type  crmt_ui_title30,
+           URL     type string,
+       end of wlink.
+  data: lv_pers_type type crmt_pers_obj,
+        lt_pers_links type crmt_ui_link_pers,
+        lcl_pers_data type ref to cl_crm_bsp_pers_data_srv,
+        preced type CRMT_UI_GROUP_TYPE,
+        emptyLine type crms_ui_link_pers.
+  DATA: lr_nav_srv    TYPE REF TO cl_crm_ui_navbar_srv.
+  DATA: lv_user_name  TYPE sy-uname.
+  DATA: lv_profile    TYPE crmt_ui_profile.
+*  DATA: lv_pers_type  TYPE crmt_pers_obj.
+  DATA: ls_pers_data  TYPE crmt_pers_data.
+*  DATA: lt_pers_links TYPE crmt_ui_link_pers.
+  DATA: ls_link       TYPE crms_ui_link_pers.
+  DATA: lt_link_ids   TYPE crmt_linkid_pers_store.
+  DATA: ls_link_id    TYPE crms_linkid_pers_store.
+  DATA: lt_wlinks     TYPE TABLE OF wlink.
+  DATA: ls_wlink      TYPE crms_wlink_pers_store.
+  DATA: ls_link_def   TYPE crmt_ui_frame_link_info.
+  DATA: lt_dom        TYPE TABLE OF dd07v.
+  DATA: ls_dom        TYPE dd07v.
+  DATA: et_group_types TYPE crmt_ui_link_pers.
+  DATA: ls_group_type TYPE bsp_wd_dropdown_line.
+  DATA: lv_link_type  TYPE crmt_ui_web_l_type.
+  DATA: lv_link_id    TYPE CRMT_UI_LOGICAL_LINK_ID.
+  DATA: rt_links      type CRMT_UI_LINK_PERS.
+
+
+  DATA: lt_links_l   TYPE TABLE OF crmc_ui_web_l.
+  DATA: lt_links_t   TYPE TABLE OF crmc_ui_web_l_t.
+  DATA: lr_profile   TYPE REF TO if_crm_ui_profile.
+  DATA: lv_group     TYPE crmt_ic_parameter_profile.
+  DATA: lv_prof      TYPE crmt_ic_profile_id.
+*  DATA: lv_link_type TYPE crmt_ui_web_l_type.
+*  DATA: lt_dom       TYPE TABLE OF dd07v.
+*  DATA: lt_wlinks    TYPE TABLE OF wlink.
+*  DATA: ls_link      TYPE crms_ui_link_pers.
+
+  FIELD-SYMBOLS: <ls_link>   TYPE wlink.
+  FIELD-SYMBOLS: <ls_link_l> TYPE crmc_ui_web_l.
+  FIELD-SYMBOLS: <ls_link_t> TYPE crmc_ui_web_l_t.
+  FIELD-SYMBOLS: <ls_wlink>  TYPE wlink.
+
+*  FIELD-SYMBOLS: <ls_link>    TYPE crms_ui_link_pers.
+  FIELD-SYMBOLS: <ls_link2>   TYPE crms_ui_link_pers.
+*  FIELD-SYMBOLS: <ls_wlink>   TYPE crms_wlink_pers_store.
+  FIELD-SYMBOLS: <ls_link_id> TYPE crms_linkid_pers_store.
+
+
+  CLEAR lt_pers_links.
+*  CLEAR et_cust_links.
+  CLEAR et_group_types.
+
+  FIELD-SYMBOLS: <wa> TYPE crms_ui_link_pers.
+
+  lcl_pers_data = cl_crm_bsp_pers_data_srv=>get_instance( ).
+
+  lv_pers_type = cl_crm_bsp_pers_data_srv=>GC_WEBLINKS.
+
+*  call method lcl_pers_data->get_pers_links                         STEP 1
+*   exporting
+*     iv_pers_type = lv_pers_type
+*   importing
+*     et_pers_links = lt_pers_links.
+
+  IF lv_pers_type <> cl_crm_bsp_pers_data_srv=>GC_WEBLINKS.
+    RETURN.
+  ENDIF.
+
+*  lv_pers_type = iv_pers_type.
+
+  lv_user_name = sy-uname.
+
+  lv_profile = 'IC_MANAGER'.
+
+
+*  IF iv_user_def <> abap_true.
+
+  SELECT SINGLE * FROM crmt_pers_data INTO ls_pers_data  WHERE user_name = lv_user_name
+                                                          AND profile = lv_profile
+                                                          AND pers_obj = lv_pers_type.
+
+  IF ls_pers_data-xml IS NOT INITIAL.
+    TRY.
+        CALL TRANSFORMATION id
+           SOURCE XML ls_pers_data-xml
+           RESULT para = lt_link_ids.
+      CATCH cx_root.
+    ENDTRY.
+  ENDIF.
+
+  LOOP AT lt_link_ids ASSIGNING <ls_link_id>.
+    ls_link-link_id = <ls_link_id>-link_id.
+    INSERT ls_link INTO TABLE lt_pers_links.
+  ENDLOOP.
+
+
+* get the actual valid titles and descriptions from customizing
+
+  CASE lv_pers_type.
+
+    WHEN cl_crm_bsp_pers_data_srv=>GC_WEBLINKS.
+
+      IF lv_pers_type = cl_crm_bsp_pers_data_srv=>GC_WEBLINKS.
+        lv_link_type = 'EXT'.
+      ENDIF.
+
+*        et_cust_links = get_web_links( iv_link_type = lv_link_type ).                  STEP 2.
+*        LOOP AT et_pers_links ASSIGNING <ls_link> WHERE link_id IS NOT INITIAL.
+*          READ TABLE et_cust_links ASSIGNING <ls_link2> WITH KEY link_id = <ls_link>-link_id.
+*          IF sy-subrc IS INITIAL.
+*            <ls_link>-link_id = <ls_link2>-link_id.
+*            <ls_link>-url = <ls_link2>-url.
+*            <ls_link>-title = <ls_link2>-title.
+*          ENDIF.
+*        ENDLOOP.
+
+      CLEAR rt_links.
+
+
+*  lv_link_type = iv_link_type.
+
+      CALL FUNCTION 'DD_DOMVALUES_GET'
+        EXPORTING
+          domname        = 'CRMT_UI_WEB_L_TYPE'
+          text           = 'X'
+          langu          = sy-langu
+        TABLES
+          dd07v_tab      = lt_dom
+        EXCEPTIONS
+          wrong_textflag = 1
+          OTHERS         = 2.
+      IF sy-subrc <> 0.
+      ENDIF.
+
+      READ TABLE lt_dom TRANSPORTING NO FIELDS WITH KEY domvalue_l = lv_link_type.
+      IF sy-subrc IS NOT INITIAL.
+        RETURN.
+      ENDIF.
+
+      lr_profile = cl_crm_ui_profile=>get_instance( ).
+
+      IF lr_profile IS  BOUND.
+        if lv_link_type = 'EXT'.
+          lv_prof =  'EXT_WEB_LINKS1'.
+        endif.
+        lv_group = lr_profile->get_component_profile( lv_prof ).
+      ENDIF.
+
+      IF lv_group IS INITIAL.
+        RETURN.
+      ENDIF.
+
+
+      if lv_link_type = 'EXT'.
+        SELECT link_id AS link_id FROM crmc_ui_web_l_a INTO TABLE lt_wlinks WHERE web_grp_id = lv_group. "#EC CI_SGLSELECT
+      endif.
+
+      if lt_wlinks is initial.
+        return.
+      endif.
+
+      SELECT * FROM crmc_ui_web_l INTO TABLE lt_links_l "#EC CI_SGLSELECT
+         FOR ALL ENTRIES IN lt_wlinks WHERE link_id = lt_wlinks-link_id
+                                     AND link_type = lv_link_type.
+
+      SELECT * FROM crmc_ui_web_l_t INTO TABLE lt_links_t "#EC CI_SGLSELECT
+         FOR ALL ENTRIES IN lt_wlinks WHERE link_id = lt_wlinks-link_id
+            AND language = sy-langu.
+
+      LOOP AT lt_wlinks ASSIGNING <ls_wlink>.
+        READ TABLE lt_links_l ASSIGNING <ls_link_l> WITH KEY link_id = <ls_wlink>-link_id.
+        IF sy-subrc IS INITIAL.
+          CONCATENATE <ls_link_l>-url_1 <ls_link_l>-url_2 <ls_link_l>-url_3 <ls_link_l>-url_4
+             <ls_link_l>-url_5 <ls_link_l>-url_6 <ls_link_l>-url_7 <ls_link_l>-url_8 INTO <ls_wlink>-url.
+        ENDIF.
+        READ TABLE lt_links_t ASSIGNING <ls_link_t> WITH KEY link_id = <ls_wlink>-link_id.
+        IF sy-subrc IS INITIAL.
+          <ls_wlink>-title = <ls_link_t>-short_desc.
+        ENDIF.
+      ENDLOOP.
+
+      loop at lt_wlinks assigning <ls_wlink>.
+        ls_link-link_id = <ls_wlink>-link_id.
+        ls_link-title = <ls_wlink>-title.
+        ls_link-url = <ls_wlink>-url.
+        append ls_link to rt_links.
+      endloop.
+
+
+
+  ENDCASE.
+
+
+******************************************************************
+
+*  IF iv_user_def = abap_true or iv_user_def is not supplied.
+* in case iv_user_def is not supplied all personalized links are retrieved
+
+  IF lv_pers_type = cl_crm_bsp_pers_data_srv=>GC_WEBLINKS.
+
+* check if there are user defined weblinks or widgets:
+
+*  CONCATENATE lv_pers_type gc_pers_add INTO lv_pers_type.                          CHECK THIS
+
+    CLEAR ls_pers_data.
+
+    SELECT SINGLE * FROM crmt_pers_data INTO ls_pers_data  WHERE user_name = lv_user_name
+                                                            AND profile = lv_profile
+                                                            AND pers_obj = lv_pers_type.
+
+    IF ls_pers_data-xml IS NOT INITIAL.
+      TRY.
+          CALL TRANSFORMATION id
+             SOURCE XML ls_pers_data-xml
+             RESULT para = lt_wlinks.
+        CATCH cx_root.
+      ENDTRY.
+    ENDIF.
+
+    CLEAR ls_link.
+
+    LOOP AT lt_wlinks ASSIGNING <ls_wlink>.
+      ls_link-link_id = <ls_wlink>-link_id.
+      ls_link-url = <ls_wlink>-url.
+      ls_link-title = <ls_wlink>-title.
+      ls_link-user_created = abap_true.
+      APPEND ls_link TO lt_pers_links.
+    ENDLOOP.
+
+  ENDIF.
+
+
+
+
+*IF et_group_types IS REQUESTED.
+*
+*CLEAR et_group_types.
+*
+*CALL FUNCTION 'DD_DOMVALUES_GET'
+*  EXPORTING
+*    domname        = 'CRMT_UI_LOGICAL_LINK_TYPE'
+*    text           = 'X'
+*    langu          = sy-langu
+*  TABLES
+*    dd07v_tab      = lt_dom
+*  EXCEPTIONS
+*    wrong_textflag = 1
+*    OTHERS         = 2.
+*IF sy-subrc <> 0.
+*ENDIF.
+
+*  LOOP AT lt_dom INTO ls_dom.
+*    ls_group_type-key = ls_dom-domvalue_l.
+*    ls_group_type-value = ls_dom-ddtext.
+*    INSERT ls_group_type INTO TABLE et_group_types.
+*  ENDLOOP.
+*
+*ENDIF.
+
+emptyLine-LINK_ID = 'emptyLine'.
+emptyLine-TITLE = ''.
+emptyLine-GROUP_TYPE = ''.
+emptyLine-URL = ''.
+emptyLine-USER_CREATED = ''.
+
+loop at lt_pers_links ASSIGNING <wa>.
+  if ( sy-tabix eq 1 ).
+    preced = <wa>-group_type.
+  elseif ( <wa>-group_type <> preced ).
+    "insert white line
+    insert emptyLine into lt_pers_links.
+    preced = <wa>-group_type.
+  endif.
+endloop.
+
+GT_WCFAVORITELINKS1 = lt_pers_links.
