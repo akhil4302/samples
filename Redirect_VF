@@ -1,0 +1,53 @@
+<!-- Page 1 -->
+<apex:page controller="redirect" >
+ <apex:form >
+  <apex:sectionHeader title="ReDirect"/>
+  <apex:pageBlock id="RD" mode="edit" >
+     <p>Name: {!name}</p>
+     <apex:inputtext title="Name" value="{!name}"/><br></br>
+     <p>City: {!city}</p>
+     <apex:inputtext value="{!city}"/><br></br>
+     <p>Country: {!country}</p>
+     <apex:inputtext value="{!country}"/><br></br><br></br>
+     <apex:commandButton action="{!Next}" value="Next"/>
+  </apex:pageBlock>
+ </apex:form> 
+</apex:page>
+
+<!-- Page 2 -->
+<apex:page controller="redirect">
+ <apex:form >
+  <apex:pageBlock >
+   <p>Name : {!name} </p>
+   <apex:inputtext value="{!name}"/><br></br>
+   <p>State : {!state}</p>
+   <apex:inputtext value="{!state}"/><br></br>
+   <p>City : {!city}</p>
+   <apex:inputtext value="{!city}"/><br></br><br></br>
+   <apex:commandButton value="save" action="{!save}"/>
+  </apex:pageBlock> 
+ </apex:form>
+</apex:page>
+
+<!-- Controller -->
+public class redirect {
+
+    public PageReference save() {
+     account a = new account();
+     a.name = name;
+     insert a;
+     PageReference pf = new ApexPages.StandardController(a).view();
+     return pf;
+    }
+
+    public string city{ get;set; }
+    public string name{ get;set; }
+    public string state{ get;set;}
+    public string country{ get;set; }
+
+    public PageReference Next() {
+     PageReference pf = new PageReference('/apex/redirect2');
+     pf.setredirect(false);
+     return pf;
+    }
+}
