@@ -1,0 +1,73 @@
+--------- Controller -----------
+public class Con {
+
+    public class wrapObj {
+        public contact con{ get;set; }
+        public boolean selected{ get;set; }
+        public wrapObj(contact c){
+            con = c;
+            selected = false;
+        }
+    }
+    
+    public list<wrapObj> wrapList{ get;set; }
+    public list<wrapObj> selectedWrapList{ get;set; }  
+    public list<wrapObj> selectedWrapList1{ get;set; }  
+    public list<contact> con{ get;set; }       
+
+    public list<wrapObj> getContact() {
+        wrapList = new list<wrapObj>();
+        con = [select Name from contact where title = 'IT'];
+        for(contact c:(list<contact>)con)
+        {
+            wrapList.add(new wrapObj(c));
+        }
+        return wrapList;
+    }
+    
+    public list<wrapObj> getSelectedContacts() {
+        selectedWrapList1 = new list<wrapObj>();
+        selectedWrapList1 = selectedWrapList;
+        return selectedWrapList1;
+    }  
+    
+    public PageReference next() {
+        selectedWrapList = new list<wrapObj>();
+        for(wrapObj ct:wrapList)
+        {
+            if(ct.selected==true)
+            {
+                selectedWrapList.add(ct);
+            }
+        } 
+        PageReference pf = new PageReference('/apex/selectedcontact');
+        pf.setRedirect(false);
+        return pf;
+    }             
+}
+
+--------- Page 1 --------------
+<apex:page Controller="Con">
+ <apex:form >
+  <apex:pageblock title="Contacts">
+   <apex:pageBlockTable id="table" value="{!contact}" var="item">
+    <apex:column >
+     <apex:inputCheckbox label="Select" value="{!item.selected}"/>
+    </apex:column>
+    <apex:column value="{!item.con.name}"/> 
+   </apex:pageBlockTable>
+    <apex:commandButton id="next" value="Next" action="{!next}"/>
+  </apex:pageblock>
+ </apex:form>
+</apex:page>
+
+--------- Page 2 --------------
+<apex:page Controller="Con">
+ <apex:form >
+  <apex:pageBlock title="Selected Contacts">
+   <apex:pageBlockTable value="{!selectedcontacts}" var="item1">
+    <apex:column value="{!item1.con.name}"/>
+   </apex:pageBlockTable>
+  </apex:pageBlock>
+ </apex:form>
+</apex:page>
