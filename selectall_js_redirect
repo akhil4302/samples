@@ -1,0 +1,97 @@
+---------- Controller ------------
+public class CheckAllUsingJavascriptController {
+
+    public List<wrapAccount> wrapAccountList {get; set;}
+    public List<wrapAccount> swrapAccountList {get; set;}
+    public List<wrapAccount> swrapAccountList1 {get; set;}
+    public PageReference next() {
+        swrapAccountList = new List<wrapAccount>();   
+        for(wrapAccount w:wrapAccountList)
+        {
+            if(w.selected==true)
+            {
+                swrapAccountList.add(w);
+            }
+        } 
+        PageReference pf = new PageReference('/apex/selectall2');
+        pf.setRedirect(false);
+        return pf;
+    }
+    
+    public list<wrapAccount> getselectedaccounts()
+    {
+        swrapAccountList1 = new List<wrapAccount>();  
+        swrapAccountList1 = swrapAccountList;
+        return swrapAccountList1;
+    }
+
+    //public List<wrapAccount> wrapAccountList {get; set;}
+     
+    public CheckAllUsingJavascriptController(){
+        if(wrapAccountList == null) {
+            wrapAccountList = new List<wrapAccount>();
+            for(Account a: [select Id, Name,BillingState, Website, Phone from Account limit 10]) {
+                // As each Account is processed we create a new wrapAccount object and add it to the wrapAccountList
+                wrapAccountList.add(new wrapAccount(a));
+            }
+        }
+    }
+     
+    public class wrapAccount {
+        public Account acc {get; set;}
+        public Boolean selected {get; set;}
+ 
+        //This is the contructor method. When we create a new wrapAccount object we pass a Account that is set to the acc property. We also set the selected value to false
+        public wrapAccount(Account a) {
+            acc = a;
+            selected = false;
+        }
+    }
+}
+
+----------- Page 1 ---------------
+<apex:page controller="CheckAllUsingJavascriptController">
+    <script type="text/javascript">
+        function selectAllCheckboxes(obj,receivedInputID){
+            var inputCheckBox = document.getElementsByTagName("input");                  
+            for(var i=0; i<inputCheckBox.length; i++){          
+                if(inputCheckBox[i].id.indexOf(receivedInputID)!=-1){                                     
+                    inputCheckBox[i].checked = obj.checked;
+                }
+            }
+        }
+    </script>
+    <apex:form >
+        <apex:pageBlock >
+            <apex:pageBlockTable value="{!wrapAccountList}" var="accWrap" id="table" title="All Accounts">
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:inputCheckbox onclick="selectAllCheckboxes(this,'inputId')"/>
+                    </apex:facet>
+                    <apex:inputCheckbox value="{!accWrap.selected}" id="inputId"/>
+                </apex:column>
+                <apex:column value="{!accWrap.acc.Name}" />
+                <apex:column value="{!accWrap.acc.BillingState}" />
+                <apex:column value="{!accWrap.acc.Phone}" />
+                
+                
+            </apex:pageBlockTable>
+            <apex:pageBlockButtons >
+                 <apex:commandButton value="Next" action="{!next}"/>
+                </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>
+
+------------ Page 2 ---------------
+<apex:page controller="CheckAllUsingJavascriptController">
+ <apex:form >
+  <apex:pageblock >
+   <apex:pageBlockTable value="{!selectedaccounts}" var="a">
+    <apex:column value="{!a.acc.name}"/>
+    <apex:column value="{!a.acc.billingstate}"/>
+    <apex:column value="{!a.acc.phone}"/>
+   </apex:pageBlockTable>
+  </apex:pageblock>
+ </apex:form>  
+</apex:page>
