@@ -1,0 +1,56 @@
+-------- Page ----------
+<apex:page controller="importDataFromCSVController">
+    <apex:form >
+        <apex:pagemessages />
+        <apex:pageBlock >
+            <apex:pageBlockSection columns="4"> 
+                  <apex:inputFile value="{!csvFileBody}"  filename="{!csvAsString}"/>
+                  <apex:commandButton value="Import Account" action="{!importCSVFile}"/>
+            </apex:pageBlockSection>
+        </apex:pageBlock>
+        <apex:pageBlock >
+           <apex:pageblocktable value="{!accList}" var="acc">
+              <apex:column value="{!acc.name}" />
+              <apex:column value="{!acc.Type}" />
+              <apex:column value="{!acc.Accountsource}" />
+              <apex:column value="{!acc.Industry }" />
+        </apex:pageblocktable>
+     </apex:pageBlock>
+   </apex:form>
+</apex:page>
+
+-------- Controller ------------
+public class importDataFromCSVController {
+
+    public Blob csvFileBody{get;set;}
+    public string csvAsString{get;set;}
+    public String[] csvFileLines{get;set;}
+    public List<account> acclist{get;set;}
+    public importDataFromCSVController(){
+        csvFileLines = new String[]{};
+        acclist = New List<Account>(); 
+    }
+  
+  public void importCSVFile(){
+       try{
+           csvAsString = csvFileBody.toString();
+           csvFileLines = csvAsString.split('\n'); 
+            
+           for(Integer i=1;i<csvFileLines.size();i++){
+               Account accObj = new Account() ;
+               string[] csvRecordData = csvFileLines[i].split(',');
+               accObj.name = csvRecordData[0] ;                            
+               accObj.Type = csvRecordData[1];
+               accObj.AccountSource = csvRecordData[2];   
+               accObj.Industry = csvRecordData[3];                                                                             
+               acclist.add(accObj);   
+           }
+        //insert acclist;
+        }
+        catch (Exception e)
+        {
+            ApexPages.Message errorMessage = new ApexPages.Message(ApexPages.severity.ERROR,'An error has occured while importin data Please make sure input csv file is correct');
+            ApexPages.addMessage(errorMessage);
+        }  
+  }
+}
